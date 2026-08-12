@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>For Dr. Nikita — Midnight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --midnight-deep:#080b1f;
+    --midnight:#0d1338;
+    --midnight-soft:#1a2352;
+    --gold:#f0c674;
+    --gold-soft:#e6d7a8;
+    --rose:#ff8fa3;
+    --star:#fdf6e3;
+    --mist: rgba(240,198,116,0.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    width:100%;height:100%;
+    background:radial-gradient(ellipse at 50% 20%, var(--midnight-soft) 0%, var(--midnight) 45%, var(--midnight-deep) 100%);
+    overflow:hidden;
+    font-family:'Quicksand',sans-serif;
+    color:var(--star);
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{
+    position:relative;
+    width:100vw;height:100vh;
+    display:flex;align-items:center;justify-content:center;
+  }
+  canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+  #starCanvas{z-index:1;}
+  #fireworkCanvas{z-index:5;}
+
+  #blackout{
+    position:absolute;inset:0;background:#000;
+    z-index:20;opacity:0;pointer-events:none;
+    transition:opacity 0.5s ease;
+  }
+
+  #content{
+    position:relative;z-index:10;
+    text-align:center;
+    display:flex;flex-direction:column;align-items:center;
+    gap:1.1rem;
+    padding:2rem;
+    max-width:90vw;
+  }
+
+  .eyebrow{
+    font-family:'Quicksand',sans-serif;
+    letter-spacing:0.35em;
+    text-transform:uppercase;
+    font-size:0.7rem;
+    color:var(--gold-soft);
+    opacity:0;
+    transition:opacity 1.5s ease;
+  }
+  .eyebrow.show{opacity:0.75;}
+
+  #countdown{
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(2.2rem,6vw,3.6rem);
+    letter-spacing:0.08em;
+    color:var(--star);
+    opacity:0;
+    transition:opacity 1.2s ease;
+    font-weight:500;
+    font-variant-numeric:tabular-nums;
+  }
+  #countdown.show{opacity:0.9;}
+
+  #mainText{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:0.6rem;
+  }
+
+  .headline{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:600;
+    font-size:clamp(1.9rem,5.2vw,3.4rem);
+    letter-spacing:0.02em;
+    color:var(--star);
+    opacity:0;
+    transform:translateY(14px);
+    transition:opacity 1.6s ease, transform 1.6s ease;
+    text-shadow:0 0 30px rgba(240,198,116,0.35);
+  }
+  .headline.show{opacity:1;transform:translateY(0);}
+
+  .subline{
+    font-family:'Quicksand',sans-serif;
+    font-weight:500;
+    font-size:clamp(0.95rem,2.6vw,1.3rem);
+    letter-spacing:0.06em;
+    color:var(--gold-soft);
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity 1.6s ease 0.3s, transform 1.6s ease 0.3s;
+  }
+  .subline.show{opacity:0.95;transform:translateY(0);}
+
+  #tenderLine{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:0.35rem;
+    margin-top:0.4rem;
+  }
+  .tender{
+    font-family:'Cormorant Garamond',serif;
+    font-style:italic;
+    font-size:clamp(1.05rem,2.8vw,1.5rem);
+    color:var(--rose);
+    opacity:0;
+    transition:opacity 2s ease;
+  }
+  .tender.show{opacity:0.95;}
+  .tender.small{
+    font-family:'Quicksand',sans-serif;
+    font-style:normal;
+    font-size:clamp(0.85rem,2.2vw,1.05rem);
+    letter-spacing:0.05em;
+    color:var(--gold-soft);
+  }
+
+  #nameReveal{
+    display:none;
+    font-family:'Cormorant Garamond',serif;
+    font-weight:600;
+    font-size:clamp(1.6rem,4.4vw,2.6rem);
+    letter-spacing:0.12em;
+    color:var(--gold);
+    opacity:0;
+    text-shadow:0 0 40px rgba(240,198,116,0.55), 0 0 80px rgba(240,198,116,0.25);
+    transition:opacity 2s ease, letter-spacing 2s ease;
+    margin-top:0.5rem;
+  }
+  #nameReveal.show{opacity:1;letter-spacing:0.18em;}
+
+  #finalLine{
+    position:absolute;
+    z-index:12;
+    font-family:'Cormorant Garamond',serif;
+    font-style:italic;
+    font-size:clamp(1.1rem,3vw,1.6rem);
+    color:var(--star);
+    opacity:0;
+    text-align:center;
+    transition:opacity 3s ease;
+    padding:0 1.5rem;
+  }
+  #finalLine.show{opacity:0.9;}
+
+  .balloon{
+    position:absolute;
+    bottom:-140px;
+    width:44px;height:56px;
+    border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    z-index:8;
+    opacity:0.9;
+    pointer-events:none;
+  }
+  .balloon::after{
+    content:'';
+    position:absolute;
+    left:50%;top:100%;
+    width:1px;height:60px;
+    background:rgba(255,255,255,0.25);
+    transform:translateX(-50%);
+  }
+  .balloon::before{
+    content:'';
+    position:absolute;
+    left:50%;top:14%;
+    width:10px;height:10px;
+    background:inherit;
+    filter:brightness(1.3);
+    border-radius:50%;
+    transform:translateX(-50%);
+    opacity:0.6;
+  }
+
+  .confetto{
+    position:absolute;
+    top:-20px;
+    z-index:9;
+    pointer-events:none;
+    opacity:0.95;
+  }
+
+  #skipBtn{
+    position:absolute;
+    bottom:22px;right:22px;
+    z-index:30;
+    background:rgba(240,198,116,0.08);
+    border:1px solid rgba(240,198,116,0.3);
+    color:var(--gold-soft);
+    font-family:'Quicksand',sans-serif;
+    font-size:0.72rem;
+    letter-spacing:0.05em;
+    padding:8px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    opacity:0.55;
+    transition:opacity 0.3s ease, background 0.3s ease;
+  }
+  #skipBtn:hover{opacity:1;background:rgba(240,198,116,0.16);}
+
+  #soundBtn{
+    position:absolute;
+    bottom:22px;left:22px;
+    z-index:30;
+    background:rgba(240,198,116,0.08);
+    border:1px solid rgba(240,198,116,0.3);
+    color:var(--gold-soft);
+    font-family:'Quicksand',sans-serif;
+    font-size:0.72rem;
+    letter-spacing:0.05em;
+    padding:8px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    opacity:0.55;
+    transition:opacity 0.3s ease, background 0.3s ease;
+  }
+  #soundBtn:hover{opacity:1;background:rgba(240,198,116,0.16);}
+
+  @media (prefers-reduced-motion: reduce){
+    .headline,.subline,.tender,#nameReveal,#finalLine,.eyebrow,#countdown{transition:opacity 0.3s ease;}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="starCanvas"></canvas>
+  <canvas id="fireworkCanvas"></canvas>
+  <div id="blackout"></div>
+
+  <div id="content">
+    <div class="eyebrow" id="eyebrow">Something special is waiting</div>
+    <div id="countdown"></div>
+
+    <div id="mainText">
+      <div class="headline" id="line1">Happy Birthday, Dr. Nikita ❤️</div>
+      <div class="subline" id="line2">MBBS done. Doctor era unlocked. 🩺✨</div>
+    </div>
+
+    <div id="tenderLine">
+      <div class="tender" id="tender1">So proud of you.</div>
+      <div class="tender" id="tender2">Here's to everything that's waiting for you. ❤️</div>
+      <div class="tender small" id="tender3">Happy Birthday, Doctor. 🩺✨</div>
+    </div>
+
+    <div id="nameReveal">DR. NIKITA KUMARI</div>
+  </div>
+
+  <div id="finalLine">Keep shining, Nikki. ✨</div>
+
+  <button id="soundBtn">🔈 sound: on</button>
+  <button id="skipBtn">skip to celebration ✨</button>
+</div>
+
+<script>
+(function(){
+  const starCanvas = document.getElementById('starCanvas');
+  const fwCanvas = document.getElementById('fireworkCanvas');
+  const sctx = starCanvas.getContext('2d');
+  const fctx = fwCanvas.getContext('2d');
+  let W,H;
+  function resize(){
+    W = starCanvas.width = fwCanvas.width = window.innerWidth * devicePixelRatio;
+    H = starCanvas.height = fwCanvas.height = window.innerHeight * devicePixelRatio;
+    starCanvas.style.width = fwCanvas.style.width = window.innerWidth+'px';
+    starCanvas.style.height = fwCanvas.style.height = window.innerHeight+'px';
+    sctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    fctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- Starfield ----------
+  let stars = [];
+  const STAR_COUNT_BASE = 90;
+  function makeStar(){
+    return {
+      x: Math.random()*window.innerWidth,
+      y: Math.random()*window.innerHeight,
+      r: Math.random()*1.4+0.3,
+      baseAlpha: Math.random()*0.5+0.25,
+      phase: Math.random()*Math.PI*2,
+      speed: Math.random()*0.4+0.15,
+      drift: (Math.random()-0.5)*0.05
+    };
+  }
+  for(let i=0;i<STAR_COUNT_BASE;i++) stars.push(makeStar());
+
+  // extra stars that fly in during the reveal sequence
+  let burstStars = [];
+
+  let t = 0;
+  let starsMoving = false;
+  function drawStars(){
+    sctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    t += 0.016;
+    stars.forEach(s=>{
+      const a = s.baseAlpha + Math.sin(t*s.speed + s.phase)*0.2;
+      sctx.beginPath();
+      sctx.fillStyle = `rgba(253,246,227,${Math.max(0,a)})`;
+      sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      sctx.fill();
+      if(starsMoving){
+        s.x += s.drift*8;
+        s.y += 0.15;
+        if(s.y > window.innerHeight) s.y = -5;
+      }
+    });
+    burstStars.forEach((s,i)=>{
+      s.life += 0.016;
+      const a = Math.max(0, 1 - s.life/s.duration);
+      sctx.beginPath();
+      const grad = sctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*4);
+      grad.addColorStop(0, `rgba(253,246,227,${a})`);
+      grad.addColorStop(1, `rgba(253,246,227,0)`);
+      sctx.fillStyle = grad;
+      sctx.arc(s.x,s.y,s.r*4,0,Math.PI*2);
+      sctx.fill();
+      s.x += s.vx; s.y += s.vy;
+    });
+    burstStars = burstStars.filter(s=>s.life < s.duration);
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+
+  function spawnBurstStars(n){
+    for(let i=0;i<n;i++){
+      burstStars.push({
+        x: Math.random()*window.innerWidth,
+        y: Math.random()*window.innerHeight,
+        r: Math.random()*1.6+0.5,
+        vx: (Math.random()-0.5)*0.3,
+        vy: (Math.random()-0.5)*0.3,
+        life:0,
+        duration: Math.random()*4+3
+      });
+    }
+  }
+
+  // ---------- Fireworks ----------
+  let fireworkParticles = [];
+  const fwColors = ['#f0c674','#ff8fa3','#fdf6e3','#9fd8ff','#c9a8ff','#ffb37a'];
+
+  function launchFirework(x,y,count=60,spreadColor=null){
+    const color = spreadColor || fwColors[Math.floor(Math.random()*fwColors.length)];
+    for(let i=0;i<count;i++){
+      const angle = (Math.PI*2*i)/count + Math.random()*0.2;
+      const speed = Math.random()*3.2+1.5;
+      fireworkParticles.push({
+        x,y,
+        vx: Math.cos(angle)*speed,
+        vy: Math.sin(angle)*speed,
+        alpha:1,
+        color,
+        size: Math.random()*2+1.2,
+        gravity: 0.028,
+        decay: Math.random()*0.012+0.010
+      });
+    }
+  }
+
+  function drawFireworks(){
+    fctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    fctx.globalCompositeOperation = 'lighter';
+    fireworkParticles.forEach(p=>{
+      p.vy += p.gravity;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= p.decay;
+      fctx.beginPath();
+      fctx.fillStyle = hexToRgba(p.color, Math.max(0,p.alpha));
+      fctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      fctx.fill();
+    });
+    fctx.globalCompositeOperation = 'source-over';
+    fireworkParticles = fireworkParticles.filter(p=>p.alpha>0);
+    requestAnimationFrame(drawFireworks);
+  }
+  drawFireworks();
+
+  function hexToRgba(hex, a){
+    const c = hex.replace('#','');
+    const r = parseInt(c.substring(0,2),16);
+    const g = parseInt(c.substring(2,4),16);
+    const b = parseInt(c.substring(4,6),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  let fireworkInterval = null;
+  function startFireworkShow(duration){
+    const end = Date.now() + duration;
+    fireworkInterval = setInterval(()=>{
+      if(Date.now() > end){ clearInterval(fireworkInterval); return; }
+      const x = Math.random()*window.innerWidth*0.8 + window.innerWidth*0.1;
+      const y = Math.random()*window.innerHeight*0.45 + window.innerHeight*0.08;
+      launchFirework(x,y, 50);
+    }, 420);
+  }
+  function stopFireworkShow(){ if(fireworkInterval) clearInterval(fireworkInterval); }
+
+  // ---------- Confetti ----------
+  const confettiColors = ['#f0c674','#ff8fa3','#fdf6e3','#9fd8ff','#c9a8ff'];
+  function spawnConfettiBurst(n){
+    const stage = document.getElementById('stage');
+    for(let i=0;i<n;i++){
+      const el = document.createElement('div');
+      el.className='confetto';
+      const size = Math.random()*7+5;
+      const color = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      const isCircle = Math.random()>0.5;
+      el.style.width = size+'px';
+      el.style.height = (isCircle?size:size*1.6)+'px';
+      el.style.background = color;
+      el.style.borderRadius = isCircle? '50%':'2px';
+      el.style.left = Math.random()*100+'vw';
+      const duration = Math.random()*2.5+3;
+      const rotate = Math.random()*720-360;
+      el.style.animation = `confFall ${duration}s ease-in forwards`;
+      el.style.setProperty('--rot', rotate+'deg');
+      stage.appendChild(el);
+      setTimeout(()=>el.remove(), duration*1000+200);
+    }
+  }
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `
+    @keyframes confFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity:1; }
+      100% { transform: translateY(105vh) rotate(var(--rot)); opacity:0.85; }
+    }
+    @keyframes balloonRise {
+      0% { transform: translateY(0) translateX(0); opacity:0.95;}
+      50% { transform: translateY(-60vh) translateX(20px); }
+      100% { transform: translateY(-125vh) translateX(-15px); opacity:0; }
+    }
+  `;
+  document.head.appendChild(styleSheet);
+
+  const balloonColors = ['#ff8fa3','#f0c674','#9fd8ff','#c9a8ff','#ffb37a'];
+  function spawnBalloons(n){
+    const stage = document.getElementById('stage');
+    for(let i=0;i<n;i++){
+      const el = document.createElement('div');
+      el.className='balloon';
+      el.style.left = (Math.random()*80+10)+'vw';
+      el.style.background = balloonColors[Math.floor(Math.random()*balloonColors.length)];
+      const duration = Math.random()*4+7;
+      el.style.animation = `balloonRise ${duration}s ease-in forwards`;
+      el.style.animationDelay = (Math.random()*2)+'s';
+      stage.appendChild(el);
+      setTimeout(()=>el.remove(), (duration+2)*1000);
+    }
+  }
+
+  // ---------- Audio (synthesized, no external files) ----------
+  let audioCtx = null;
+  let soundOn = true;
+  let ambientNodes = [];
+  document.getElementById('soundBtn').addEventListener('click', function(){
+    soundOn = !soundOn;
+    this.textContent = soundOn ? '🔈 sound: on' : '🔇 sound: off';
+    if(!soundOn && audioCtx) audioCtx.suspend();
+    else if(audioCtx) audioCtx.resume();
+  });
+
+  function ensureAudio(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function softAmbient(){
+    if(!soundOn) return;
+    const ctx = ensureAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type='sine';
+    osc.frequency.value = 110;
+    gain.gain.value = 0;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    gain.gain.linearRampToValueAtTime(0.02, ctx.currentTime+3);
+    ambientNodes.push({osc,gain});
+  }
+  function stopAmbient(){
+    ambientNodes.forEach(n=>{
+      try{
+        n.gain.gain.linearRampToValueAtTime(0, (audioCtx?audioCtx.currentTime:0)+1.2);
+        setTimeout(()=>{ try{n.osc.stop();}catch(e){} }, 1400);
+      }catch(e){}
+    });
+    ambientNodes = [];
+  }
+
+  // gentle bell/chime tone
+  function chime(freq, time, dur=0.9, vol=0.09){
+    if(!soundOn) return;
+    const ctx = ensureAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type='sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, ctx.currentTime+time);
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime+time+0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+time+dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime+time);
+    osc.stop(ctx.currentTime+time+dur+0.1);
+  }
+
+  // Soft cinematic build-up chimes (not a copyrighted melody, original ambient motif)
+  function playBuildUp(){
+    const notes = [392.00,440.00,493.88,523.25,587.33,659.25];
+    notes.forEach((f,i)=> chime(f, i*0.55, 1.3, 0.055));
+  }
+
+  // Original gentle celebratory melody motif (not reproducing any copyrighted song)
+  function playCelebrationMotif(){
+    const melody = [
+      [523.25,0],[659.25,0.35],[783.99,0.7],[659.25,1.05],
+      [739.99,1.4],[880.00,1.75],[783.99,2.2],[659.25,2.55],
+      [587.33,2.9],[659.25,3.25],[523.25,3.7]
+    ];
+    melody.forEach(([f,t])=> chime(f, t, 1.1, 0.075));
+  }
+
+  // ---------- Sequence control ----------
+  const eyebrow = document.getElementById('eyebrow');
+  const countdownEl = document.getElementById('countdown');
+  const blackout = document.getElementById('blackout');
+  const mainText = document.getElementById('mainText');
+  const line1 = document.getElementById('line1');
+  const line2 = document.getElementById('line2');
+  const tenderLine = document.getElementById('tenderLine');
+  const tender1 = document.getElementById('tender1');
+  const tender2 = document.getElementById('tender2');
+  const tender3 = document.getElementById('tender3');
+  const nameReveal = document.getElementById('nameReveal');
+  const finalLine = document.getElementById('finalLine');
+  const skipBtn = document.getElementById('skipBtn');
+
+  function getNextMidnight(){
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24,0,0,0);
+    return next;
+  }
+
+  let target = getNextMidnight();
+  let countdownTimer = null;
+  let sequenceStarted = false;
+
+  function fmt(ms){
+    if(ms<0) ms=0;
+    const totalSec = Math.floor(ms/1000);
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function startCountdown(){
+    eyebrow.classList.add('show');
+    setTimeout(()=> countdownEl.classList.add('show'), 900);
+    countdownTimer = setInterval(()=>{
+      const diff = target - new Date();
+      if(diff<=0){
+        clearInterval(countdownTimer);
+        beginSequence();
+        return;
+      }
+      countdownEl.textContent = fmt(diff);
+    }, 1000);
+    countdownEl.textContent = fmt(target-new Date());
+  }
+
+  function beginSequence(){
+    if(sequenceStarted) return;
+    sequenceStarted = true;
+    skipBtn.style.display = 'none';
+    eyebrow.classList.remove('show');
+    countdownEl.classList.remove('show');
+    softAmbient();
+
+    setTimeout(()=>{
+      // blackout moment
+      blackout.style.opacity = '1';
+      setTimeout(()=>{
+        blackout.style.opacity = '0';
+        starsMoving = true;
+        spawnBurstStars(40);
+        playBuildUp();
+        let i=0;
+        const burstInterval = setInterval(()=>{
+          spawnBurstStars(15);
+          i++;
+          if(i>5) clearInterval(burstInterval);
+        }, 500);
+
+        // song + fireworks + confetti + balloons
+        setTimeout(()=>{
+          playCelebrationMotif();
+          startFireworkShow(6000);
+          spawnConfettiBurst(90);
+          spawnBalloons(10);
+          mainText.style.display='flex';
+          setTimeout(()=> line1.classList.add('show'), 200);
+          setTimeout(()=> line2.classList.add('show'), 900);
+        }, 3200);
+
+        // tender message after fireworks settle
+        setTimeout(()=>{
+          stopFireworkShow();
+          tenderLine.style.display='flex';
+          setTimeout(()=> tender1.classList.add('show'), 200);
+          setTimeout(()=> tender2.classList.add('show'), 1600);
+          setTimeout(()=> tender3.classList.add('show'), 3200);
+        }, 10500);
+
+        // final fireworks return + name reveal
+        setTimeout(()=>{
+          startFireworkShow(4500);
+          spawnConfettiBurst(50);
+          nameReveal.style.display='block';
+          setTimeout(()=> nameReveal.classList.add('show'), 300);
+          chime(659.25, 0, 1.5, 0.06);
+          chime(880.00, 0.4, 1.8, 0.06);
+        }, 16000);
+
+        // fade everything to one star
+        setTimeout(()=>{
+          fadeToOneStar();
+        }, 23000);
+
+      }, 1000);
+    }, 800);
+  }
+
+  function fadeToOneStar(){
+    stopFireworkShow();
+    stopAmbient();
+    // fade out text
+    [line1,line2,tender1,tender2,tender3,nameReveal].forEach(el=> el.style.opacity='0');
+    document.querySelectorAll('.balloon,.confetto').forEach(el=>{
+      el.style.transition='opacity 2s ease';
+      el.style.opacity='0';
+    });
+
+    let fade = 0;
+    const fadeInterval = setInterval(()=>{
+      fade += 0.02;
+      stars.forEach(s=> s.baseAlpha = Math.max(0, s.baseAlpha - 0.015));
+      burstStars = [];
+      if(fade>=1) clearInterval(fadeInterval);
+    }, 100);
+
+    setTimeout(()=>{
+      mainText.style.display='none';
+      tenderLine.style.display='none';
+      nameReveal.style.display='none';
+      // leave exactly one star glowing at center-ish
+      stars = [{
+        x: window.innerWidth/2, y: window.innerHeight*0.42,
+        r: 2.2, baseAlpha: 0.95, phase:0, speed:0.3, drift:0
+      }];
+      starsMoving = false;
+      finalLine.style.top = (window.innerHeight*0.55)+'px';
+      finalLine.style.left = '50%';
+      finalLine.style.transform = 'translateX(-50%)';
+      finalLine.classList.add('show');
+
+      setTimeout(()=>{
+        finalLine.style.opacity='0';
+        let sFade = 0;
+        const lastFade = setInterval(()=>{
+          sFade += 0.02;
+          stars[0].baseAlpha = Math.max(0, stars[0].baseAlpha - 0.02);
+          stars[0].r = Math.max(0, stars[0].r - 0.01);
+          if(sFade>=1) clearInterval(lastFade);
+        }, 100);
+      }, 5000);
+    }, 3500);
+  }
+
+  skipBtn.addEventListener('click', ()=>{
+    ensureAudio();
+    clearInterval(countdownTimer);
+    beginSequence();
+  });
+
+  // prime audio context on first interaction (autoplay policies)
+  document.body.addEventListener('click', function primeOnce(){
+    ensureAudio();
+    document.body.removeEventListener('click', primeOnce);
+  }, {once:true});
+
+  startCountdown();
+})();
+</script>
+</body>
+</html>
